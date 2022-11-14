@@ -6,7 +6,8 @@ const DEFAULT_REMAINING_DAYS_FOR_GROUP_PLAN = 2;
 export default function calculateSubscriptionTerminationDate (
   nextBill, purchasedPlan, groupPlanCustomerId,
 ) {
-  const defaultRemainingDays = purchasedPlan.customerId === groupPlanCustomerId
+  const defaultRemainingDays = !purchasedPlan.customerId
+    || purchasedPlan.customerId === groupPlanCustomerId
     ? DEFAULT_REMAINING_DAYS_FOR_GROUP_PLAN : DEFAULT_REMAINING_DAYS;
 
   const estimatedNextBill = purchasedPlan.consecutive && purchasedPlan.consecutive.offset
