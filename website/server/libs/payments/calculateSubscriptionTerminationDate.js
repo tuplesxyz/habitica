@@ -12,7 +12,7 @@ export default function calculateSubscriptionTerminationDate (
   const estimatedNextBill = purchasedPlan.consecutive && purchasedPlan.consecutive.offset
     ? moment().add(purchasedPlan.consecutive.offset, 'months').startOf('month') : moment();
 
-  const billDate = nextBill ? moment().max(nextBill, estimatedNextBill) : estimatedNextBill;
+  const billDate = nextBill ? moment.max(nextBill, estimatedNextBill) : estimatedNextBill;
   const remaining = Math.max(moment(billDate).diff(new Date(), 'days', true), defaultRemainingDays);
 
   const extraMonths = Math.max(purchasedPlan.extraMonths, 0);
