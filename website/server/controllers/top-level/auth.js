@@ -26,13 +26,7 @@ api.logout = {
   method: 'GET',
   url: '/logout-server',
   async handler (req, res) {
-    if (req.logout && req.session && req.session.save) { // passportjs method
-      req.logout(function(err) {
-        if (err) {
-          return next(err);
-        }
-      });
-    }
+    if (req.logout) req.logout(); // passportjs method
     req.session = null;
 
     const redirectUrl = req.query.redirectToLogin === 'true' ? '/login' : '/';
