@@ -84,7 +84,7 @@
       </div>
     </div>
     <div
-      v-if="hasSubscription"
+      v-if="hasSubscription && !editingSubscription"
       class="d-flex flex-column align-items-center"
     >
       <h1 class="mt-4 mx-auto">
@@ -113,13 +113,23 @@
           </div>
           <div
             v-else
-            class="w-55 text-center"
-            v-html="$t('paymentSubBillingWithMethod', {
-              amount: purchasedPlanIdInfo.price,
-              months: purchasedPlanIdInfo.months,
-              paymentMethod: purchasedPlanIdInfo.plan
-            })"
+            class="w-55 d-flex flex-column justify-content-center"
           >
+            <div
+              class="text-center"
+              v-html="$t('paymentSubBillingWithMethod', {
+                amount: purchasedPlanIdInfo.price,
+                months: purchasedPlanIdInfo.months,
+                paymentMethod: purchasedPlanIdInfo.plan
+              })"
+            >
+            </div>
+            <div
+              class="svg-icon mx-auto"
+              :class="paymentMethodLogo.class"
+              v-html="paymentMethodLogo.icon"
+            >
+            </div>
           </div>
           <div
             v-if="canEditCardDetails"
@@ -141,13 +151,12 @@
               <div>{{ $t('subUpdateCard') }}</div>
             </button>
           </div>
-          <div
-            v-else
-            class="svg-icon"
-            :class="paymentMethodLogo.class"
-            v-html="paymentMethodLogo.icon"
+          <button
+            class="btn btn-secondary mt-4"
+            @click="editSubscription()"
           >
-          </div>
+            {{ $t('editSubscription') }}
+          </button>
           <div
             v-if="purchasedPlanExtraMonthsDetails.months > 0"
             class="extra-months green-10 py-2 px-3 mt-4"
@@ -255,6 +264,21 @@
           </div>
         </div>
       </div>
+    </div>
+    <div
+      v-if="editingSubscription"
+      class="d-flex flex-column justify-content-center"
+    >
+      <h1
+        v-once
+        class="mt-4 mx-auto"
+      >
+        {{ $t('subscription') }}
+      </h1>
+      <subscription-options
+        :editing-subscription="subscription.key"
+        class="mb-4 mx-auto subscribe-card"
+      />
     </div>
     <div
       v-if="hasSubscription && !hasCanceledSubscription"
@@ -451,10 +475,12 @@
   }
 
   .svg-amazon-pay {
+    margin-top: 1rem;
     width: 208px;
   }
 
   .svg-apple-pay {
+    margin-top: 1.5rem;
     width: 97.1px;
     height: 40px;
   }
@@ -505,6 +531,7 @@
   }
 
   .svg-google-pay {
+    margin-top: 1.5rem;
     width: 99.7px;
     height: 40px;
   }
@@ -532,8 +559,13 @@
   }
 
   .svg-paypal {
+    margin-top: 1.5rem;
     width: 148px;
     height: 40px;
+  }
+
+  .svg-stripe {
+    display: none;
   }
 
   .w-55 {
@@ -602,6 +634,7 @@ export default {
   data () {
     return {
       loading: false,
+      editingSubscription: false,
       gemCostTranslation: {
         gemCost: planGemLimits.convRate,
         gemLimit: planGemLimits.convRate,
@@ -611,14 +644,6 @@ export default {
       },
       // @TODO: Remove the need for this or move it to mixin
       amazonPayments: {},
-      paymentMethods: {
-        AMAZON_PAYMENTS: 'Amazon Payments',
-        STRIPE: 'Stripe',
-        GOOGLE: 'Google',
-        APPLE: 'Apple',
-        PAYPAL: 'Paypal',
-        GIFT: 'Gift',
-      },
       icons: Object.freeze({
         amazonPayLogo,
         applePayLogo,
@@ -693,7 +718,7 @@ export default {
     },
     gemCap () {
       return planGemLimits.convCap
-          + this.user.purchased.plan.consecutive.gemCapExtra;
+        + this.user.purchased.plan.consecutive.gemCapExtra;
     },
     numberOfMysticHourglasses () {
       const numberOfHourglasses = subscriptionBlocks[this.subscription.key].months / 3;
@@ -714,35 +739,6 @@ export default {
     },
     currentMysterySet () {
       return `shop_set_mystery_${moment().format('YYYYMM')}`;
-    },
-    paymentMethodLogo () {
-      switch (this.user.purchased.plan.paymentMethod) {
-        case this.paymentMethods.AMAZON_PAYMENTS:
-          return {
-            icon: this.icons.amazonPayLogo,
-            class: 'svg-amazon-pay mt-3',
-          };
-        case this.paymentMethods.APPLE:
-          return {
-            icon: this.icons.applePayLogo,
-            class: 'svg-apple-pay mt-4',
-          };
-        case this.paymentMethods.GOOGLE:
-          return {
-            icon: this.icons.googlePayLogo,
-            class: 'svg-google-pay mt-4',
-          };
-        case this.paymentMethods.PAYPAL:
-          return {
-            icon: this.icons.paypalLogo,
-            class: 'svg-paypal mt-4',
-          };
-        default:
-          return {
-            icon: null,
-            class: null,
-          };
-      }
     },
     subscriptionEndDate () {
       return moment(this.user.purchased.plan.dateTerminated).format('MM/DD/YYYY');
@@ -772,6 +768,10 @@ export default {
 
       this.text('Coupon applied!');
       this.subscription.key = 'google_6mo';
+    },
+    editSubscription () {
+      this.subscription.key = this.user.purchased.plan.planId;
+      this.editingSubscription = true;
     },
     getCancelSubInfo () {
       let payMethod = this.user.purchased.plan.paymentMethod || '';

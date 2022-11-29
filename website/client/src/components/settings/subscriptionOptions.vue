@@ -1,10 +1,45 @@
 <template>
   <div id="subscription-form">
-    <b-form-group class="mb-4 w-100 h-100">
+    <b-form-group class="w-100 h-100">
+      <div
+        v-if="editingSubscription"
+      >
+        <h2 v-once>
+          {{ $t('editSubscription') }}
+        </h2>
+        <div
+          class="sub-summary d-flex justify-content-around mx-4 my-3"
+        >
+          <div class="text-center">
+            <strong>
+              {{ $t('yourSubscription') }}
+            </strong>
+            <div
+              v-once
+              class="mt-2"
+              v-html="$t('giftSubscriptionRateText', {
+                price: subscriptionBlocks[editingSubscription].price,
+                months: subscriptionBlocks[editingSubscription].months})"
+            >
+            </div>
+          </div>
+          <div class="text-center">
+            <strong>
+              {{ $t('paymentMethod') }}
+            </strong>
+            <div
+              class="svg-icon mx-auto"
+              :class="paymentMethodLogo.class"
+              v-html="paymentMethodLogo.icon"
+            >
+            </div>
+          </div>
+        </div>
+      </div>
       <!-- eslint-disable vue/no-use-v-if-with-v-for -->
       <b-form-radio
         v-for="block in subscriptionBlocksOrdered"
-        v-if="block.target !== 'group' && block.canSubscribe === true"
+        v-if="showBlock(block)"
         :key="block.key"
         v-model="subscription.key"
         :value="block.key"
@@ -100,8 +135,33 @@
 <style lang="scss" scoped>
   @import '~@/assets/scss/colors.scss';
 
+  h2 {
+    color: $purple-300;
+    text-align: center;
+  }
+
+  .sub-summary {
+    border-radius: 4px;
+    background-color: $gray-700;
+    padding: 14px;
+  }
+
   .subscribe-option {
     border-bottom: 1px solid $gray-600;
+  }
+
+  .svg-amazon-pay {
+    width: 125px;
+  }
+
+  .svg-paypal {
+    margin-top: .5rem;
+    width: 90px;
+  }
+
+  .svg-stripe {
+    margin-top: .25rem;
+    width: 58px;
   }
 </style>
 
@@ -109,6 +169,9 @@
 import filter from 'lodash/filter';
 import sortBy from 'lodash/sortBy';
 
+import amazonPayLogo from '@/assets/svg/amazonpay.svg';
+import paypalLogo from '@/assets/svg/paypal-logo.svg';
+import stripeLogo from '@/assets/svg/stripe.svg';
 import paymentsButtons from '@/components/payments/buttons/list';
 import paymentsMixin from '../../mixins/payments';
 import subscriptionBlocks from '@/../../common/script/content/subscriptionBlocks';
@@ -121,6 +184,10 @@ export default {
     paymentsMixin,
   ],
   props: {
+    editingSubscription: {
+      type: String,
+      default: '',
+    },
     userReceivingGift: {
       type: Object,
       default () {},
@@ -139,6 +206,11 @@ export default {
         type: 'subscription',
         subscription: { key: 'basic_earned' },
       },
+      icons: Object.freeze({
+        amazonPayLogo,
+        paypalLogo,
+        stripeLogo,
+      }),
     };
   },
   computed: {
@@ -165,7 +237,15 @@ export default {
     },
     updateSubscriptionData (key) {
       this.subscription.key = key;
-      if (this.userReceivingGift._id) this.gift.subscription.key = key;
+      if (this.userReceivingGift && this.userReceivingGift._id) {
+        this.gift.subscription.key = key;
+      }
+    },
+    showBlock (block) {
+      if (this.editingSubscription === block.key) {
+        return false;
+      }
+      return block.target !== 'group' && block.canSubscribe === true;
     },
   },
 };
