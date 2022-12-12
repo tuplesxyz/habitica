@@ -9,7 +9,7 @@
       @show="isOpened = true"
       @hide="isOpened = false"
     >
-      <template v-slot:button-content>
+      <template #button-content>
         <slot
           name="item"
           :item="selected || placeholder"
@@ -23,11 +23,11 @@
         v-for="item in items"
         :key="keyProp ? item[keyProp] : item"
         :disabled="typeof item[disabledProp] === 'undefined' ? false : item[disabledProp]"
-        :active="item === selected"
+        :active="isSelected(item)"
         :class="{
-          active: item === selected,
+          active: isSelected(item),
           selectListItem: true,
-          showIcon: !hideIcon && item === selected
+          showIcon: !hideIcon && isSelected(item)
         }"
         @click="selectItem(item)"
       >
@@ -101,6 +101,9 @@ export default {
     keyProp: {
       type: String,
     },
+    activeKeyProp: {
+      type: String,
+    },
     disabledProp: {
       type: String,
     },
@@ -131,6 +134,13 @@ export default {
     selectItem (item) {
       this.selected = item;
       this.$emit('select', item);
+    },
+    isSelected (item) {
+      if (this.activeKeyProp) {
+        return item[this.activeKeyProp] === this.selected;
+      }
+
+      return item === this.selected;
     },
   },
 };

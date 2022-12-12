@@ -1,7 +1,7 @@
 <template>
   <fragment>
     <tr
-      v-if="!show"
+      v-if="!modalVisible"
     >
       <td class="settings-label">
         {{ $t("displayName") }}
@@ -12,14 +12,14 @@
       <td class="settings-button">
         <a
           class="edit-link"
-          @click.prevent="show = true"
+          @click.prevent="openModal()"
         >
           {{ $t('edit') }}
         </a>
       </td>
     </tr>
     <tr
-      v-if="show"
+      v-if="modalVisible"
       class="expanded"
     >
       <td colspan="3">
@@ -53,6 +53,7 @@
                 type="text"
                 :placeholder="$t('newDisplayName')"
                 :class="{'is-invalid input-invalid': displayNameInvalid}"
+                @keyup="valuesChanged()"
               >
               <div
                 v-if="displayNameIssues.length > 0"
@@ -72,7 +73,7 @@
           <save-cancel-buttons
             :disable-save="displayNameCannotSubmit"
             @saveClicked="changeDisplayName(temporaryDisplayName)"
-            @cancelClicked="resetAndClose()"
+            @cancelClicked="closeModal()"
           />
         </div>
       </td>
@@ -135,17 +136,16 @@ import debounce from 'lodash/debounce';
 import { mapState } from '@/libs/store';
 
 import checkIcon from '@/assets/svg/check.svg';
-import SaveCancelButtons from '@/pages/settings/inlineSettings/_saveCancelButtons';
-import { _InlineSettingMixin } from '@/pages/settings/inlineSettings/_inlineSettingMixin';
+import SaveCancelButtons from '../components/saveCancelButtons.vue';
+import { InlineSettingMixin } from '../components/inlineSettingMixin';
 
 export default {
   components: { SaveCancelButtons },
-  mixins: [_InlineSettingMixin],
+  mixins: [InlineSettingMixin],
   data () {
     return {
-      show: false,
-
       temporaryDisplayName: '',
+      inputChanged: false,
       displayNameIssues: [],
       updates: {
         newEmail: '',
@@ -167,29 +167,34 @@ export default {
       return !this.validEmail || this.updates.password.length === 0;
     },
     displayNameInvalid () {
-      if (this.temporaryDisplayName.length <= 1) return false;
-      return !this.displayNameValid;
-    },
-    displayNameValid () {
-      if (this.temporaryDisplayName.length <= 1) return false;
-      return this.displayNameIssues.length === 0;
+      if (this.temporaryDisplayName.length <= 1) {
+        return true;
+      }
+
+      return this.displayNameIssues.length !== 0;
     },
     displayNameCannotSubmit () {
-      if (this.temporaryDisplayName.length <= 1) return true;
-      return !this.displayNameValid;
+      return this.displayNameInvalid || !this.inputChanged;
+    },
+  },
+  watch: {
+    temporaryDisplayName: {
+      handler () {
+        this.validateDisplayName(this.temporaryDisplayName);
+      },
+      deep: true,
     },
   },
   mounted () {
-    this.restoreDisplayName();
+    this.resetControls();
   },
   methods: {
-    resetAndClose () {
-      this.show = false;
-    },
-    restoreDisplayName () {
-      if (this.temporaryDisplayName.length < 1) {
-        this.temporaryDisplayName = this.user.profile.name;
-      }
+    /**
+     * is a callback from the {InlineSettingMixin}
+     * do not remove
+     */
+    resetControls () {
+      this.temporaryDisplayName = this.user.profile.name;
     },
     async changeDisplayName (newName) {
       await axios.put('/api/v4/user/', { 'profile.name': newName });
@@ -197,21 +202,25 @@ export default {
       this.user.profile.name = newName;
       this.temporaryDisplayName = newName;
     },
-    validateDisplayName: debounce(function checkName (displayName) {
+    validateDisplayName: debounce(async function checkName (displayName) {
       if (displayName.length <= 1 || displayName === this.user.profile.name) {
         this.displayNameIssues = [];
         return;
       }
-      this.$store.dispatch('auth:verifyDisplayName', {
+      const res = await this.$store.dispatch('auth:verifyDisplayName', {
         displayName,
-      }).then(res => {
-        if (res.issues !== undefined) {
-          this.displayNameIssues = res.issues;
-        } else {
-          this.displayNameIssues = [];
-        }
       });
+
+      if (res.issues !== undefined) {
+        this.displayNameIssues = res.issues;
+      } else {
+        this.displayNameIssues = [];
+      }
     }, 500),
+    valuesChanged () {
+      this.inputChanged = true;
+      this.modalValuesChanged();
+    },
   },
 };
 </script>

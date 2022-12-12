@@ -97,7 +97,7 @@
         font-weight: bold;
         color: $gray-50;
 
-        width: 20%;
+        width: 23%;
       }
 
       .input-area .settings-label {
@@ -119,6 +119,10 @@
         font-size: 14px;
         font-weight: bold;
         color: $purple-300;
+
+        &.danger {
+          color: $maroon-50;
+        }
       }
 
       .dialog-disclaimer {

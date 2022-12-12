@@ -4,7 +4,10 @@
       <div class="settings-label">
         {{ $t(customLabel ?? "password") }}
       </div>
-      <div class="forgot-password">
+      <div
+        v-if="showForgetPassword"
+        class="forgot-password"
+      >
         <a
           class="edit-link"
           @click.prevent=""
@@ -20,8 +23,8 @@
         <input
           v-model="currentPassword"
           class="form-control"
-          :placeholder="$t('password')"
-          type="text"
+          :placeholder="$t(customLabel ?? 'password')"
+          type="password"
           @keyup="$emit('passwordValue', currentPassword)"
         >
       </div>
@@ -30,9 +33,13 @@
 </template>
 
 <script>
+
+// TODO change the authForm.vue to accept a query param so that it switches automically to
+// "forgot password" mode
+
 export default {
   name: 'CurrentPasswordInput',
-  props: ['customLabel'],
+  props: ['customLabel', 'showForgetPassword'],
   data () {
     return {
       currentPassword: '',

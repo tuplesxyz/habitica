@@ -1,7 +1,7 @@
 <template>
   <fragment>
     <tr
-      v-if="!show"
+      v-if="!modalVisible"
     >
       <td class="settings-label">
         {{ $t("username") }}
@@ -12,14 +12,14 @@
       <td class="settings-button">
         <a
           class="edit-link"
-          @click.prevent="show = true"
+          @click.prevent="openModal()"
         >
           {{ $t(user?.auth?.local?.username ? 'edit' : 'add') }}
         </a>
       </td>
     </tr>
     <tr
-      v-if="show"
+      v-if="modalVisible"
       class="expanded"
     >
       <td colspan="3">
@@ -36,47 +36,20 @@
           {{ $t("changeUsernameDisclaimer") }}
         </div>
 
-        <div class="input-area">
-          <div class="settings-label">
-            {{ $t("username") }}
-          </div>
-          <div class="form-group">
-            <div
-              class="input-group"
-              :class="{ 'is-valid': usernameValid }"
-            >
-              <input
-                id="changeUsername"
-                v-model="inputValue"
-                class="form-control"
-                type="text"
-                :placeholder="$t('newUsername')"
-                :class="{ 'is-invalid input-invalid': !usernameValid }"
-                @blur="restoreEmptyUsername()"
-              >
-              <div class="input-floating-checkmark">
-                <div
-                  v-once
-                  class="svg-icon color check-icon"
-                  v-html="icons.checkIcon"
-                ></div>
-              </div>
-            </div>
-            <div
-              v-for="issue in usernameIssues"
-              :key="issue"
-              class="input-error"
-            >
-              {{ issue }}
-            </div>
-          </div>
+        <validated-text-input
+          v-model="inputValue"
+          settings-label="username"
+          :is-valid="usernameValid"
+          :invalid-issues="usernameIssues"
+          @update:value="valuesChanged()"
+          @blur="restoreEmptyUsername()"
+        />
 
-          <save-cancel-buttons
-            :disable-save="usernameCannotSubmit"
-            @saveClicked="changeUser('username', cleanedInputValue)"
-            @cancelClicked="resetAndClose()"
-          />
-        </div>
+        <save-cancel-buttons
+          :disable-save="usernameCannotSubmit"
+          @saveClicked="changeUser('username', cleanedInputValue)"
+          @cancelClicked="closeModal()"
+        />
       </td>
     </tr>
   </fragment>
@@ -85,49 +58,6 @@
 <style lang="scss" scoped>
 @import '~@/assets/scss/colors.scss';
 
-.input-group {
-  position: relative;
-  background: white;
-}
-
-input {
-  margin-right: 2rem;
-}
-
-.input-floating-checkmark {
-  position: absolute;
-  background: none !important;
-  right: 0.5rem;
-  top: 0.5rem;
-
-  width: 1rem;
-  height: 1rem;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.input-group.is-valid {
-  border-color: $green-10 !important;
-}
-
-.input-group:not(.is-valid) {
-  .check-icon {
-    display: none;
-  }
-}
-
-.check-icon {
-  width: 12px;
-  height: 10px;
-  color: $green-50;
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
 </style>
 
 <script>
@@ -135,20 +65,20 @@ import axios from 'axios';
 import debounce from 'lodash/debounce';
 import { mapState } from '@/libs/store';
 
-import checkIcon from '@/assets/svg/check.svg';
-import { _InlineSettingMixin } from './_inlineSettingMixin';
-import SaveCancelButtons from '@/pages/settings/inlineSettings/_saveCancelButtons';
+import { InlineSettingMixin } from '../components/inlineSettingMixin';
+import SaveCancelButtons from '../components/saveCancelButtons.vue';
+import ValidatedTextInput from '@/pages/settings/components/validatedTextInput.vue';
+
+// TODO extract usernameIssues/checks to a mixin to share between this and the authForm
 
 export default {
-  components: { SaveCancelButtons },
-  mixins: [_InlineSettingMixin],
+  components: { ValidatedTextInput, SaveCancelButtons },
+  mixins: [InlineSettingMixin],
   data () {
     return {
       inputValue: '',
+      inputChanged: false,
       usernameIssues: [],
-      icons: Object.freeze({
-        checkIcon,
-      }),
     };
   },
   computed: {
@@ -170,7 +100,7 @@ export default {
       if (this.cleanedInputValue.length <= 1) {
         return true;
       }
-      return !this.usernameValid;
+      return !this.usernameValid || !this.inputChanged;
     },
   },
   watch: {
@@ -179,12 +109,19 @@ export default {
     },
   },
   mounted () {
-    this.restoreEmptyUsername();
+    this.resetControls();
   },
   methods: {
+    /**
+     * is a callback from the {InlineSettingMixin}
+     * do not remove
+     */
+    resetControls () {
+      this.inputValue = `@${this.user.auth.local.username}`;
+    },
     restoreEmptyUsername () {
       if (this.inputValue.length < 1) {
-        this.inputValue = `@${this.user.auth.local.username}`;
+        this.resetControls();
       }
     },
     async changeUser (attribute, newUsername) {
@@ -196,20 +133,26 @@ export default {
       // this.localAuth.username = this.user.auth.local.username;
       this.user.flags.verifiedUsername = true;
     },
-    validateUsername: debounce(function checkName (username) {
+    valuesChanged () {
+      this.inputChanged = true;
+
+      this.modalValuesChanged();
+    },
+    validateUsername: debounce(async function checkName (username) {
       if (username.length <= 1 || username === this.user.auth.local.username) {
         this.usernameIssues = [];
         return;
       }
-      this.$store.dispatch('auth:verifyUsername', {
+
+      const res = await this.$store.dispatch('auth:verifyUsername', {
         username,
-      }).then(res => {
-        if (res.issues !== undefined) {
-          this.usernameIssues = res.issues;
-        } else {
-          this.usernameIssues = [];
-        }
       });
+
+      if (res.issues !== undefined) {
+        this.usernameIssues = res.issues;
+      } else {
+        this.usernameIssues = [];
+      }
     }, 500),
   },
 };
