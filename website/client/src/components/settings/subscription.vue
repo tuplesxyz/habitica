@@ -278,10 +278,12 @@
       <subscription-options
         :editing-subscription="subscription.key"
         class="mb-4 mx-auto subscribe-card"
+        @cancel-editing="cancelEditing"
+        @cancel-subscription="cancelSubscriptionConfirm({canCancel: canCancelSubscription})"
       />
     </div>
     <div
-      v-if="hasSubscription && !hasCanceledSubscription"
+      v-if="hasSubscription && !hasCanceledSubscription && !editingSubscription"
       class="d-flex flex-column align-items-center mt-3"
     >
       <div class="cancel-card p-4 text-center">
@@ -780,6 +782,10 @@ export default {
     },
     showSelectUser () {
       this.$root.$emit('bv::show::modal', 'select-user-modal');
+    },
+    cancelEditing () {
+      this.subscription.key = null;
+      this.editingSubscription = false;
     },
   },
 };

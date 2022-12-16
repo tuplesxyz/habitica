@@ -23,6 +23,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    editing: {
+      type: Boolean,
+      defoult: false,
+    },
   },
   data () {
     return { // @TODO what needed here? can be moved to mixin?

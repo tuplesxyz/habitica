@@ -4,9 +4,22 @@
       <div
         v-if="editingSubscription"
       >
-        <h2 v-once>
-          {{ $t('editSubscription') }}
-        </h2>
+        <div class="d-flex flex-column justify-content-center">
+          <div
+            class="svg-icon color close-x ml-auto"
+            aria-hidden="true"
+            tabindex="0"
+            @click="cancel()"
+            @keypress.enter="cancel()"
+            v-html="icons.close"
+          ></div>
+          <h2
+            v-once
+            class="mt-n3 mb-0"
+          >
+            {{ $t('editSubscription') }}
+          </h2>
+        </div>
         <div
           class="sub-summary d-flex justify-content-around mx-4 my-3"
         >
@@ -78,7 +91,7 @@
       :amazon-data="{type: 'single', gift, giftedTo: userReceivingGift._id, receiverName}"
     />
     <payments-buttons
-      v-else
+      v-else-if="!editingSubscription"
       :disabled="!subscription.key"
       :stripe-fn="() => redirectToStripe({
         subscription: subscription.key,
@@ -91,6 +104,45 @@
         coupon: subscription.coupon
       }"
     />
+    <div
+      v-if="editingSubscription"
+    >
+      <div class="small-heading">
+        What happens next?
+      </div>
+      <ul class="small mt-2 mx-4 mb-4">
+        <li>Your new plan starts today.</li>
+        <li>Today and on MM/DD/YYYY, you'll be charged $X.YY + tax.</li>
+        <li>
+          Any remaining time on your previous subscription will convert to months of credit,
+          which will extend your subscription's end date if you ever decide to cancel.
+        </li>
+      </ul>
+      <payments-buttons
+        :stripe-fn="user.purchased.plan.paymentMethod === paymentMethods.STRIPE ?
+          () => redirectToStripe({
+            subscription: subscription.key,
+            coupon: subscription.coupon,
+          }) : null"
+        :paypal-fn="user.purchased.plan.paymentMethod === paymentMethods.PAYPAL ?
+          () => openPaypal({
+            url: paypalPurchaseLink,
+            type: 'subscription',
+          }) : null"
+        :amazon-data="user.purchased.plan.paymentMethod === paymentMethods.AMAZON_PAYMENTS ? {
+          type: 'subscription',
+          subscription: subscription.key,
+          coupon: subscription.coupon
+        } : null"
+        :editing="true"
+      />
+      <div
+        class="cancel-link py-2"
+        @click="cancelSubPrompt"
+      >
+        Need to cancel your subscription?
+      </div>
+    </div>
   </div>
 </template>
 
@@ -140,6 +192,42 @@
     text-align: center;
   }
 
+  .cancel-link {
+    color: $maroon-50;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.71;
+    background-color: rgba($red-500, 0.15);
+    cursor: pointer;
+  }
+
+  .close-x {
+    color: $gray-200;
+    height: 16px;
+    width: 16px;
+    position: relative;
+    opacity: 0.75;
+    cursor: pointer;
+    right: 1rem;
+    top: -1rem;
+
+    &:hover, &:focus {
+      opacity: 1;
+    }
+  }
+
+  .small {
+    color: $gray-100;
+  }
+
+  .small-heading {
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1.33;
+    text-align: center;
+    color: $gray-100;
+  }
+
   .sub-summary {
     border-radius: 4px;
     background-color: $gray-700;
@@ -147,7 +235,11 @@
   }
 
   .subscribe-option {
-    border-bottom: 1px solid $gray-600;
+    background-color: $gray-700;
+
+    &:not(:last-of-type) {
+      border-bottom: 1px solid $gray-600;
+    }
   }
 
   .svg-amazon-pay {
@@ -169,10 +261,12 @@
 import filter from 'lodash/filter';
 import sortBy from 'lodash/sortBy';
 
+import paymentsButtons from '@/components/payments/buttons/list';
+
+import closeIcon from '@/assets/svg/close.svg';
 import amazonPayLogo from '@/assets/svg/amazonpay.svg';
 import paypalLogo from '@/assets/svg/paypal-logo.svg';
 import stripeLogo from '@/assets/svg/stripe.svg';
-import paymentsButtons from '@/components/payments/buttons/list';
 import paymentsMixin from '../../mixins/payments';
 import subscriptionBlocks from '@/../../common/script/content/subscriptionBlocks';
 
@@ -208,6 +302,7 @@ export default {
       },
       icons: Object.freeze({
         amazonPayLogo,
+        close: closeIcon,
         paypalLogo,
         stripeLogo,
       }),
@@ -246,6 +341,12 @@ export default {
         return false;
       }
       return block.target !== 'group' && block.canSubscribe === true;
+    },
+    cancel () {
+      this.$emit('cancel-editing');
+    },
+    cancelSubPrompt () {
+      this.$emit('cancel-subscription');
     },
   },
 };
