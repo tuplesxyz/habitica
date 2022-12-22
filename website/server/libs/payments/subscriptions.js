@@ -26,6 +26,7 @@ import { addSubscriptionToGroupUsers, cancelGroupUsersSubscription } from './gro
 
 // @TODO: Abstract to shared/constant
 const JOINED_GROUP_PLAN = 'joined group plan';
+const EDITED_SUBSCRIPTION = 'edited subscription';
 const analytics = getAnalyticsServiceByEnvironment();
 
 function _findMysteryItems (user, dateMoment) {
@@ -424,7 +425,12 @@ async function cancelSubscription (data) {
     emailType = 'cancel-subscription';
     // When cancelling because the user joined a group plan, no cancel-subscription email is sent
     // because the group-member-join email says the subscription is cancelled.
-    if (data.cancellationReason && data.cancellationReason === JOINED_GROUP_PLAN) sendEmail = false;
+    if (data.cancellationReason && (
+      data.cancellationReason === JOINED_GROUP_PLAN
+      || data.cancellationReason === EDITED_SUBSCRIPTION)
+    ) {
+      sendEmail = false;
+    }
   }
 
   if (plan.customerId === paymentConstants.GROUP_PLAN_CUSTOMER_ID) {

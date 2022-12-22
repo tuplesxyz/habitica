@@ -88,12 +88,13 @@ api.subscribe = {
     if (!req.query.sub) throw new BadRequest(apiError('missingSubKey'));
 
     const sub = shared.content.subscriptionBlocks[req.query.sub];
-    const { coupon } = req.query;
+    const { coupon, edited } = req.query;
 
     const link = await paypalPayments.subscribe({ sub, coupon });
 
     req.session.paypalBlock = req.query.sub;
     req.session.groupId = req.query.groupId;
+    req.session.edited = edited;
 
     if (req.query.noRedirect) {
       res.respond(200);
@@ -119,14 +120,15 @@ api.subscribeSuccess = {
     if (!req.session.paypalBlock) throw new BadRequest(apiError('missingPaypalBlock'));
 
     const block = shared.content.subscriptionBlocks[req.session.paypalBlock];
-    const { groupId } = req.session;
+    const { groupId, edited } = req.session;
     const { token } = req.query;
 
     delete req.session.paypalBlock;
     delete req.session.groupId;
+    delete req.session.edited;
 
     await paypalPayments.subscribeSuccess({
-      user, block, groupId, token, headers: req.headers,
+      user, groupId, block, headers: req.headers, token, edited,
     });
 
     if (req.query.noRedirect) {

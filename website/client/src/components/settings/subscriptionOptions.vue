@@ -1,10 +1,58 @@
 <template>
   <div id="subscription-form">
-    <b-form-group class="mb-4 w-100 h-100">
+    <b-form-group class="w-100 h-100">
+      <div
+        v-if="editingSubscription"
+      >
+        <div class="d-flex flex-column justify-content-center">
+          <div
+            class="svg-icon color close-x ml-auto"
+            aria-hidden="true"
+            tabindex="0"
+            @click="cancel()"
+            @keypress.enter="cancel()"
+            v-html="icons.close"
+          ></div>
+          <h2
+            v-once
+            class="mt-n3 mb-0"
+          >
+            {{ $t('editSubscription') }}
+          </h2>
+        </div>
+        <div
+          class="sub-summary d-flex justify-content-around mx-4 my-3"
+        >
+          <div class="text-center">
+            <strong>
+              {{ $t('yourSubscription') }}
+            </strong>
+            <div
+              v-once
+              class="mt-2"
+              v-html="$t('giftSubscriptionRateText', {
+                price: subscriptionBlocks[editingSubscription].price,
+                months: subscriptionBlocks[editingSubscription].months})"
+            >
+            </div>
+          </div>
+          <div class="text-center">
+            <strong>
+              {{ $t('paymentMethod') }}
+            </strong>
+            <div
+              class="svg-icon mx-auto"
+              :class="paymentMethodLogo.class"
+              v-html="paymentMethodLogo.icon"
+            >
+            </div>
+          </div>
+        </div>
+      </div>
       <!-- eslint-disable vue/no-use-v-if-with-v-for -->
       <b-form-radio
         v-for="block in subscriptionBlocksOrdered"
-        v-if="block.target !== 'group' && block.canSubscribe === true"
+        v-if="showBlock(block)"
         :key="block.key"
         v-model="subscription.key"
         :value="block.key"
@@ -43,7 +91,7 @@
       :amazon-data="{type: 'single', gift, giftedTo: userReceivingGift._id, receiverName}"
     />
     <payments-buttons
-      v-else
+      v-else-if="!editingSubscription"
       :disabled="!subscription.key"
       :stripe-fn="() => redirectToStripe({
         subscription: subscription.key,
@@ -56,6 +104,45 @@
         coupon: subscription.coupon
       }"
     />
+    <div
+      v-if="editingSubscription"
+    >
+      <div class="small-heading">
+        What happens next?
+      </div>
+      <ul class="small mt-2 mx-4 mb-4">
+        <li>Your new plan starts today.</li>
+        <li>Today and on MM/DD/YYYY, you'll be charged $X.YY + tax.</li>
+        <li>
+          Any remaining time on your previous subscription will convert to months of credit,
+          which will extend your subscription's end date if you ever decide to cancel.
+        </li>
+      </ul>
+      <payments-buttons
+        :stripe-fn="user.purchased.plan.paymentMethod === paymentMethods.STRIPE ?
+          () => redirectToStripe({
+            subscription: subscription.key,
+            coupon: subscription.coupon,
+          }) : null"
+        :paypal-fn="user.purchased.plan.paymentMethod === paymentMethods.PAYPAL ?
+          () => openPaypal({
+            url: paypalEditedSubLink,
+            type: 'subscription',
+          }) : null"
+        :amazon-data="user.purchased.plan.paymentMethod === paymentMethods.AMAZON_PAYMENTS ? {
+          type: 'subscription',
+          subscription: subscription.key,
+          coupon: subscription.coupon
+        } : null"
+        :editing="true"
+      />
+      <div
+        class="cancel-link py-2"
+        @click="cancelSubPrompt"
+      >
+        Need to cancel your subscription?
+      </div>
+    </div>
   </div>
 </template>
 
@@ -100,8 +187,73 @@
 <style lang="scss" scoped>
   @import '~@/assets/scss/colors.scss';
 
+  h2 {
+    color: $purple-300;
+    text-align: center;
+  }
+
+  .cancel-link {
+    color: $maroon-50;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.71;
+    background-color: rgba($red-500, 0.15);
+    cursor: pointer;
+  }
+
+  .close-x {
+    color: $gray-200;
+    height: 16px;
+    width: 16px;
+    position: relative;
+    opacity: 0.75;
+    cursor: pointer;
+    right: 1rem;
+    top: -1rem;
+
+    &:hover, &:focus {
+      opacity: 1;
+    }
+  }
+
+  .small {
+    color: $gray-100;
+  }
+
+  .small-heading {
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1.33;
+    text-align: center;
+    color: $gray-100;
+  }
+
+  .sub-summary {
+    border-radius: 4px;
+    background-color: $gray-700;
+    padding: 14px;
+  }
+
   .subscribe-option {
-    border-bottom: 1px solid $gray-600;
+    background-color: $gray-700;
+
+    &:not(:last-of-type) {
+      border-bottom: 1px solid $gray-600;
+    }
+  }
+
+  .svg-amazon-pay {
+    width: 125px;
+  }
+
+  .svg-paypal {
+    margin-top: .5rem;
+    width: 90px;
+  }
+
+  .svg-stripe {
+    margin-top: .25rem;
+    width: 58px;
   }
 </style>
 
@@ -110,6 +262,11 @@ import filter from 'lodash/filter';
 import sortBy from 'lodash/sortBy';
 
 import paymentsButtons from '@/components/payments/buttons/list';
+
+import closeIcon from '@/assets/svg/close.svg';
+import amazonPayLogo from '@/assets/svg/amazonpay.svg';
+import paypalLogo from '@/assets/svg/paypal-logo.svg';
+import stripeLogo from '@/assets/svg/stripe.svg';
 import paymentsMixin from '../../mixins/payments';
 import subscriptionBlocks from '@/../../common/script/content/subscriptionBlocks';
 
@@ -121,6 +278,10 @@ export default {
     paymentsMixin,
   ],
   props: {
+    editingSubscription: {
+      type: String,
+      default: '',
+    },
     userReceivingGift: {
       type: Object,
       default () {},
@@ -139,6 +300,12 @@ export default {
         type: 'subscription',
         subscription: { key: 'basic_earned' },
       },
+      icons: Object.freeze({
+        amazonPayLogo,
+        close: closeIcon,
+        paypalLogo,
+        stripeLogo,
+      }),
     };
   },
   computed: {
@@ -165,7 +332,21 @@ export default {
     },
     updateSubscriptionData (key) {
       this.subscription.key = key;
-      if (this.userReceivingGift._id) this.gift.subscription.key = key;
+      if (this.userReceivingGift && this.userReceivingGift._id) {
+        this.gift.subscription.key = key;
+      }
+    },
+    showBlock (block) {
+      if (this.editingSubscription === block.key) {
+        return false;
+      }
+      return block.target !== 'group' && block.canSubscribe === true;
+    },
+    cancel () {
+      this.$emit('cancel-editing');
+    },
+    cancelSubPrompt () {
+      this.$emit('cancel-subscription');
     },
   },
 };

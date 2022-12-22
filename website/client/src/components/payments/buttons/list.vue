@@ -1,6 +1,6 @@
 <template>
   <div class="payments-column mx-auto mt-auto">
-    <h4>{{ $t('choosePaymentMethod') }}</h4>
+    <h4 v-if="!editing">{{ $t('choosePaymentMethod') }}</h4>
     <button
       v-if="stripeAvailable"
       class="btn btn-primary payment-button payment-item with-icon"
@@ -100,6 +100,10 @@ export default {
   },
   props: {
     disabled: {
+      type: Boolean,
+      default: false,
+    },
+    editing: {
       type: Boolean,
       default: false,
     },

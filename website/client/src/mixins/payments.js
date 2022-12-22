@@ -14,13 +14,25 @@ let stripeInstance = null;
 
 export default {
   mixins: [notificationsMixin],
+  data () {
+    return {
+      paymentMethods: {
+        AMAZON_PAYMENTS: 'Amazon Payments',
+        STRIPE: 'Stripe',
+        GOOGLE: 'Google',
+        APPLE: 'Apple',
+        PAYPAL: 'Paypal',
+        GIFT: 'Gift',
+      },
+    };
+  },
   computed: {
     ...mapState({ user: 'user.data', credentials: 'credentials' }),
     paypalCheckoutLink () {
       return '/paypal/checkout';
     },
-    paypalSubscriptionLink () {
-      return `/paypal/subscribe?sub=${this.subscriptionPlan}`;
+    paypalEditedSubLink () {
+      return `/paypal/subscribe?sub=${this.subscriptionPlan}&edited=true`;
     },
     paypalPurchaseLink () {
       if (!this.subscription) {
@@ -45,6 +57,40 @@ export default {
         return renewalDate;
       }
       return renewalDate.format(this.user.preferences.dateFormat.toUpperCase());
+    },
+    paymentMethodLogo () {
+      switch (this.user.purchased.plan.paymentMethod) {
+        case this.paymentMethods.AMAZON_PAYMENTS:
+          return {
+            icon: this.icons.amazonPayLogo,
+            class: 'svg-amazon-pay',
+          };
+        case this.paymentMethods.APPLE:
+          return {
+            icon: this.icons.applePayLogo,
+            class: 'svg-apple-pay',
+          };
+        case this.paymentMethods.GOOGLE:
+          return {
+            icon: this.icons.googlePayLogo,
+            class: 'svg-google-pay',
+          };
+        case this.paymentMethods.PAYPAL:
+          return {
+            icon: this.icons.paypalLogo,
+            class: 'svg-paypal',
+          };
+        case this.paymentMethods.STRIPE:
+          return {
+            icon: this.icons.stripeLogo,
+            class: 'svg-stripe',
+          };
+        default:
+          return {
+            icon: null,
+            class: null,
+          };
+      }
     },
   },
   methods: {
