@@ -15,11 +15,10 @@ module.exports = {
     'import/no-unresolved': 'off',
     'import/extensions': 'off',
     'vue/component-tags-order': ['warn', {
-      order: [ 'template', 'style', 'script' ],
+      order: ['template', 'style', 'script'],
     }],
     'vue/no-mutating-props': 'warn',
     'vue/no-v-html': 'off',
-    'vue/no-mutating-props': 'warn',
     'vue/html-self-closing': ['error', {
       html: {
         void: 'never',
