@@ -126,7 +126,7 @@
           }) : null"
         :paypal-fn="user.purchased.plan.paymentMethod === paymentMethods.PAYPAL ?
           () => openPaypal({
-            url: paypalPurchaseLink,
+            url: paypalEditedSubLink,
             type: 'subscription',
           }) : null"
         :amazon-data="user.purchased.plan.paymentMethod === paymentMethods.AMAZON_PAYMENTS ? {

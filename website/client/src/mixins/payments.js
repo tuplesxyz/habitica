@@ -31,8 +31,8 @@ export default {
     paypalCheckoutLink () {
       return '/paypal/checkout';
     },
-    paypalSubscriptionLink () {
-      return `/paypal/subscribe?sub=${this.subscriptionPlan}`;
+    paypalEditedSubLink () {
+      return `/paypal/subscribe?sub=${this.subscriptionPlan}&edited=true`;
     },
     paypalPurchaseLink () {
       if (!this.subscription) {
