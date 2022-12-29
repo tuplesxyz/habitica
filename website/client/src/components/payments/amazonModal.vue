@@ -78,6 +78,7 @@ export default {
         orderReferenceId: null,
         subscription: null,
         coupon: null,
+        edited: false,
       },
       isAmazonSetup: false,
       amazonButtonEnabled: false,
@@ -254,6 +255,7 @@ export default {
             groupId: this.amazonPayments.groupId,
             groupToCreate: this.amazonPayments.groupToCreate,
             paymentType: 'Amazon',
+            edited: this.amazonPayments.edited,
           });
 
           const newGroup = response.data.data;

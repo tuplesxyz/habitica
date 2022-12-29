@@ -285,6 +285,7 @@ api.subscribe = async function subscribe (options) {
     user,
     groupId,
     headers,
+    edited,
   } = options;
 
   if (!sub) throw new BadRequest(i18n.t('missingSubscriptionCode'));
@@ -341,6 +342,13 @@ api.subscribe = async function subscribe (options) {
       StoreName: this.constants.STORE_NAME,
     },
   });
+
+  if (edited) {
+    await this.cancelSubscription({
+      user,
+      cancellationReason: 'edited subscription',
+    });
+  }
 
   await payments.createSubscription({
     user,

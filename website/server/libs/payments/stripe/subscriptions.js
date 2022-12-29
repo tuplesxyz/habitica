@@ -33,25 +33,6 @@ export async function checkSubData (sub, isGroup = false, coupon) {
   }
 }
 
-export async function applySubscription (session) {
-  const { metadata, customer: customerId, subscription: subscriptionId } = session;
-  const { sub: subStringified, userId, groupId } = metadata;
-
-  const sub = subStringified ? JSON.parse(subStringified) : undefined;
-
-  const user = await User.findById(metadata.userId).exec();
-  if (!user) throw new NotFound(shared.i18n.t('userWithIDNotFound', { userId }));
-
-  await payments.createSubscription({
-    user,
-    customerId,
-    paymentMethod: stripeConstants.PAYMENT_METHOD,
-    sub,
-    groupId,
-    subscriptionId,
-  });
-}
-
 export async function handlePaymentMethodChange (session, stripeInc) {
   // @TODO: We need to mock this, but curently we don't have correct
   // Dependency Injection. And the Stripe Api doesn't seem to be a singleton?
@@ -143,5 +124,35 @@ export async function cancelSubscription (options, stripeInc) {
     nextBill,
     paymentMethod: this.constants.PAYMENT_METHOD,
     cancellationReason,
+  });
+}
+
+export async function applySubscription (session) {
+  const { metadata, customer: customerId, subscription: subscriptionId } = session;
+  const {
+    sub: subStringified,
+    userId,
+    groupId,
+    edited,
+  } = metadata;
+
+  const sub = subStringified ? JSON.parse(subStringified) : undefined;
+
+  const user = await User.findById(metadata.userId).exec();
+  if (!user) throw new NotFound(shared.i18n.t('userWithIDNotFound', { userId }));
+
+  if (edited) {
+    await cancelSubscription({
+      user,
+      cancellationReason: 'edited subscription',
+    });
+  }
+  await payments.createSubscription({
+    user,
+    customerId,
+    paymentMethod: stripeConstants.PAYMENT_METHOD,
+    sub,
+    groupId,
+    subscriptionId,
   });
 }

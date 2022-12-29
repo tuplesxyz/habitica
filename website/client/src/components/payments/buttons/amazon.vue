@@ -42,6 +42,7 @@ export default {
         orderReferenceId: null,
         subscription: null,
         coupon: null,
+        edited: false,
       },
       isAmazonSetup: false,
       amazonButtonEnabled: false,

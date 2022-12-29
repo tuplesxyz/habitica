@@ -100,13 +100,16 @@ api.subscribe = {
   url: '/amazon/subscribe',
   middlewares: [authWithHeaders()],
   async handler (req, res) {
-    const { billingAgreementId } = req.body;
+    const {
+      billingAgreementId,
+      coupon,
+      groupId,
+      edited,
+    } = req.body;
     const sub = req.body.subscription
       ? shared.content.subscriptionBlocks[req.body.subscription]
       : false;
-    const { coupon } = req.body;
     const { user } = res.locals;
-    const { groupId } = req.body;
 
     await amzLib.subscribe({
       billingAgreementId,
@@ -115,6 +118,7 @@ api.subscribe = {
       user,
       groupId,
       headers: req.headers,
+      edited,
     });
 
     res.respond(200);

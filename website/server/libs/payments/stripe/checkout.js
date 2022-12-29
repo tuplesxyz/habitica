@@ -24,6 +24,7 @@ export async function createCheckoutSession (options, stripeInc) {
     sub,
     groupId,
     coupon,
+    edited,
   } = options;
 
   // @TODO: We need to mock this, but curently we don't have correct
@@ -44,6 +45,7 @@ export async function createCheckoutSession (options, stripeInc) {
     userId: user._id,
     gift: gift ? JSON.stringify(gift) : undefined,
     sub: sub ? JSON.stringify(sub) : undefined,
+    edited,
   };
 
   let lineItems;

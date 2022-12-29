@@ -122,7 +122,7 @@
         :stripe-fn="user.purchased.plan.paymentMethod === paymentMethods.STRIPE ?
           () => redirectToStripe({
             subscription: subscription.key,
-            coupon: subscription.coupon,
+            edited: true,
           }) : null"
         :paypal-fn="user.purchased.plan.paymentMethod === paymentMethods.PAYPAL ?
           () => openPaypal({
@@ -132,7 +132,7 @@
         :amazon-data="user.purchased.plan.paymentMethod === paymentMethods.AMAZON_PAYMENTS ? {
           type: 'subscription',
           subscription: subscription.key,
-          coupon: subscription.coupon
+          edited: true,
         } : null"
         :editing="true"
       />

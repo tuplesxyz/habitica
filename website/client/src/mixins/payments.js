@@ -191,6 +191,9 @@ export default {
         postData.gift = data.gift;
       }
       if (data.subscription) postData.sub = sub.key;
+      if (data.edited) {
+        postData.edited = true;
+      }
       if (data.coupon) postData.coupon = data.coupon;
       if (data.groupId) postData.groupId = data.groupId;
       if (data.demographics) postData.demographics = data.demographics;
@@ -307,6 +310,7 @@ export default {
       if (data.subscription) {
         this.amazonPayments.subscription = data.subscription;
         this.amazonPayments.coupon = data.coupon;
+        this.amazonPayments.edited = data.edited;
       }
 
       if (data.groupId) {

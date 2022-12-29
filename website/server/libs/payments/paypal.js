@@ -206,7 +206,6 @@ api.subscribeSuccess = async function subscribeSuccess (options = {}) {
   const result = await this.paypalBillingAgreementExecute(token, {});
   if (edited) {
     await this.subscribeCancel({
-      groupId,
       user,
       cancellationReason: 'edited subscription',
     });
