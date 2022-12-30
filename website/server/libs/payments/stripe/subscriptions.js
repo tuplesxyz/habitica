@@ -122,7 +122,7 @@ export async function cancelSubscription (options, stripeInc) {
     user,
     groupId,
     nextBill,
-    paymentMethod: this.constants.PAYMENT_METHOD,
+    paymentMethod: stripeConstants.PAYMENT_METHOD,
     cancellationReason,
   });
 }
