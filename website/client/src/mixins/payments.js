@@ -32,7 +32,7 @@ export default {
       return '/paypal/checkout';
     },
     paypalEditedSubLink () {
-      return `/paypal/subscribe?sub=${this.subscriptionPlan}&edited=true`;
+      return `/paypal/subscribe?sub=${this.subscription.key}&edited=true`;
     },
     paypalPurchaseLink () {
       if (!this.subscription) {
